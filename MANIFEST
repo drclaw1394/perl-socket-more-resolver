@@ -1,0 +1,6 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+t/Socket-More-Resolver.t
+lib/Socket/More/Resolver.pm
