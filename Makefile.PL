@@ -6,7 +6,7 @@ WriteMakefile(
   PREREQ_PM         => {
     "Export::These"=>"v0.2.1",
     "constant::more"=>"v0.3.0",
-    "Socket::More::Constants"=>0
+    "Socket::More::Constants"=>"v0.1.1"
     ,
   }, # e.g., Module::Name => 1.1
   ABSTRACT_FROM     => 'lib/Socket/More/Resolver.pod', # retrieve abstract from module
