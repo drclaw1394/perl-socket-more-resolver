@@ -1,5 +1,7 @@
 package Socket::More::Resolver::Worker;
-use v5.36;
+use strict;
+use warnings;
+use feature "say";
 unless(caller){
   $0="S::M::R::W";
   my $gai_data_pack="l> l> l> l> l>/a* l>/a*";
@@ -23,7 +25,7 @@ unless(caller){
   my $run=1;
   my @in_fds;
   my @out_fds;
-  my $use_core;#=1;#=1;
+  my $use_core=1;#=1;
   while(@ARGV){
     local $_=shift;  
     if(/--in/){
