@@ -1,5 +1,4 @@
 package Socket::More::Resolver;
-#use v5.36;
 use strict;
 use warnings;
 
@@ -342,14 +341,23 @@ sub process_results{
       }
       elsif($entry->[REQ_CB]){
         my @list;
-        for my( $error, $family, $type, $protocol, $addr, $canonname)(@res){
-          if(ref($entry->[REQ_DATA]) eq "ARRAY"){
-            push @list, [$error, $family, $type, $protocol, $addr, $canonname]; 
-          }
-          else {
-            push @list, {family=>$family, socktype=>$type, protocol=>$protocol, addr=>$addr, canonname=>$canonname};
-          }
+        #for my( $error, $family, $type, $protocol, $addr, $canonname)(@res){
+        if(ref($entry->[REQ_DATA]) eq "ARRAY"){
+          push @list, [@res];#[$error, $family, $type, $protocol, $addr, $canonname]; 
         }
+        else {
+          #push @list, {family=>$family, socktype=>$type, protocol=>$protocol, addr=>$addr, canonname=>$canonname};
+          push @list, {
+            error=>$res[0],
+            family=>$res[1],
+            socktype=>$res[2],
+            protocol=>$res[3],
+            addr=>$res[4],
+            cannonname=>$res[5]
+          };
+
+        }
+          #}
         $entry->[REQ_CB](@list);
       }
       else {

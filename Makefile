@@ -19,7 +19,7 @@
 #     META_ADD => { meta-spec=>{ version=>q[2] }, resources=>{ repository=>{ type=>q[git], url=>q[git://github.com/drclaw1394/perl-socket-more-resolver.git], web=>q[https://github.com/drclaw1394/perl-socket-more-resolver] } } }
 #     MIN_PERL_VERSION => q[5.024000]
 #     NAME => q[Socket::More::Resolver]
-#     PREREQ_PM => { Export::These=>q[v0.2.1], Socket::More::Constants=>q[0], constant::more=>q[v0.3.0] }
+#     PREREQ_PM => { Export::These=>q[v0.2.1], Socket::More::Constants=>q[v0.1.1], constant::more=>q[v0.3.0] }
 #     TEST_REQUIRES => {  }
 #     VERSION_FROM => q[lib/Socket/More/Resolver.pm]
 
@@ -522,7 +522,7 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) '    - inc' >> META_new.yml
 	$(NOECHO) $(ECHO) 'requires:' >> META_new.yml
 	$(NOECHO) $(ECHO) '  Export::These: v0.2.1' >> META_new.yml
-	$(NOECHO) $(ECHO) '  Socket::More::Constants: '\''0'\''' >> META_new.yml
+	$(NOECHO) $(ECHO) '  Socket::More::Constants: v0.1.1' >> META_new.yml
 	$(NOECHO) $(ECHO) '  constant::more: v0.3.0' >> META_new.yml
 	$(NOECHO) $(ECHO) '  perl: '\''5.024000'\''' >> META_new.yml
 	$(NOECHO) $(ECHO) 'resources:' >> META_new.yml
@@ -566,7 +566,7 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) '      "runtime" : {' >> META_new.json
 	$(NOECHO) $(ECHO) '         "requires" : {' >> META_new.json
 	$(NOECHO) $(ECHO) '            "Export::These" : "v0.2.1",' >> META_new.json
-	$(NOECHO) $(ECHO) '            "Socket::More::Constants" : "0",' >> META_new.json
+	$(NOECHO) $(ECHO) '            "Socket::More::Constants" : "v0.1.1",' >> META_new.json
 	$(NOECHO) $(ECHO) '            "constant::more" : "v0.3.0",' >> META_new.json
 	$(NOECHO) $(ECHO) '            "perl" : "5.024000"' >> META_new.json
 	$(NOECHO) $(ECHO) '         }' >> META_new.json
@@ -896,7 +896,7 @@ ppd :
 	$(NOECHO) $(ECHO) '    <IMPLEMENTATION>' >> Socket-More-Resolver.ppd
 	$(NOECHO) $(ECHO) '        <PERLCORE VERSION="5,024000,0,0" />' >> Socket-More-Resolver.ppd
 	$(NOECHO) $(ECHO) '        <REQUIRE NAME="Export::These" VERSION="v0.2.1" />' >> Socket-More-Resolver.ppd
-	$(NOECHO) $(ECHO) '        <REQUIRE NAME="Socket::More::Constants" />' >> Socket-More-Resolver.ppd
+	$(NOECHO) $(ECHO) '        <REQUIRE NAME="Socket::More::Constants" VERSION="v0.1.1" />' >> Socket-More-Resolver.ppd
 	$(NOECHO) $(ECHO) '        <REQUIRE NAME="constant::more" VERSION="v0.3.0" />' >> Socket-More-Resolver.ppd
 	$(NOECHO) $(ECHO) '        <ARCHITECTURE NAME="darwin-2level-5.36" />' >> Socket-More-Resolver.ppd
 	$(NOECHO) $(ECHO) '        <CODEBASE HREF="" />' >> Socket-More-Resolver.ppd
