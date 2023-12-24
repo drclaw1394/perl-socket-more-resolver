@@ -12,7 +12,7 @@ use constant::more qw<CMD_GAI=0   CMD_GNI   CMD_SPAWN   CMD_KILL CMD_REAP>;
 use constant::more qw<WORKER_ID=0 WORKER_READ   WORKER_WRITE  WORKER_CREAD WORKER_CWRITE WORKER_QUEUE  WORKER_BUSY>;
 use constant::more qw<REQ_CMD=0   REQ_ID  REQ_DATA  REQ_CB  REQ_ERR REQ_WORKER>;
 
-#use Fcntl;
+use Fcntl;
 
 use Export::These qw<getaddrinfo getnameinfo close_pool>;
 
@@ -63,37 +63,23 @@ sub _preexport {
    
   # Don't generate pairs if they already exist
   if(!@pairs){
-    #open my $marker, "<", __FILE__ or die "Could make marker";
-    pipe my $_marker, my $marker;
-    my $marker_fd=fileno $marker;
-
-    #my $old_F=$^F;
-    #say STDERR "oldf $old_F";
-    #say STDERR "marker $marker_fd";
 
     $pool_max=($options{max_workers}//4);
     $pool_max=4 if $pool_max <=0;
     $pool_max++;
     $enable_shrink=$options{enable_shrink};
 
-    #say STDERR 
-    local $^F=($marker_fd+4*$pool_max);
 
     #pre allocate enough pipes for full pool
     for(1..$pool_max){
       pipe my $c_read, my $p_write;
       pipe my $p_read, my $c_write;
-      #fcntl $c_read, F_SETFD, 0;  #Make sure we clear CLOSEXEC
-      #fcntl $c_write, F_SETFD,0;
+      fcntl $c_read, F_SETFD, 0;  #Make sure we clear CLOSEXEC
+      fcntl $c_write, F_SETFD,0;
 
-      #say STDERR fileno $p_read, ", ", fileno $c_write;
       push @pairs,[0, $p_read, $p_write, $c_read, $c_write, [], 0]; 
     }
 
-    #$^F=$old_F;
-    #say STDERR $^F;
-    close $marker;
-    close $_marker;
 
 
 
@@ -391,7 +377,7 @@ sub process_results{
       if($error and $entry->[REQ_ERR]){
         $entry->[REQ_ERR]($error);
       }
-      elsif($entry->[REQ_CB]){
+      elsif(!$error and $entry->[REQ_CB]){
           $entry->[REQ_CB]($host, $port);
       }
       else {

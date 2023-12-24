@@ -28,5 +28,5 @@ sleep 0.1 and getaddrinfo while($run);
 say STDERR "AFTER";
 #sleep 20;
 #say STDERR "after cleanup";
-Socket::More::Resolver::cleanup();
+#Socket::More::Resolver::cleanup();
 done_testing;
