@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use feature "say";
 unless(caller){
-  $0="S::M::R::W";
+  $0="S::M::R::T";
   my $gai_data_pack="l> l> l> l> l>/a* l>/a*";
   my $gai_pack="($gai_data_pack)*";
 
@@ -76,6 +76,8 @@ unless(caller){
       }
       else {
         #child.
+
+        $0="S::M::R::W";
         DEBUG and say "FORKED WORKER... child with fds";
         my ($in_fd, $out_fd)=unpack "l> l>", $bin;
         close $in;
