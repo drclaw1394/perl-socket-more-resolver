@@ -8,6 +8,7 @@ unless(caller){
   my $gai_pack="($gai_data_pack)*";
 
   package main;
+  use feature "say";
   #use POSIX ":sys_wait_h"; 
   #use constant::more DEBUG=>0;
   #use constant::more qw<CMD_GAI=0 CMD_GNI CMD_SPAWN CMD_KILL CMD_REAP>;

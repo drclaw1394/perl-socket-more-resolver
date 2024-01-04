@@ -172,13 +172,13 @@ sub _get_worker{
           if($worker->[WORKER_ID]){
             $busy_count++;
             # Fully spawned and working on a request
-            DEBUG and say "GETTING WORKER: fully spawned $index";
+            DEBUG and say STDERR "GETTING WORKER: fully spawned $index";
           }
           else {
             # half spawned, this has at least 1 message
             # if all other workers are busy we use the first one of these we come accros
             $fallback//=$index if $worker->[WORKER_QUEUE]->@*;
-            DEBUG and say "GETTING WORKER: half spawned fallback $index";
+            DEBUG and say STDERR "GETTING WORKER: half spawned fallback $index";
           }
       }
       else {
@@ -186,13 +186,13 @@ sub _get_worker{
         #
         if($worker->[WORKER_ID]){
           # THIS IS THE WORKER WE WANT
-          DEBUG and say "GETTING WORKER: found unbusy $index";
+          DEBUG and say STDERR "GETTING WORKER: found unbusy $index";
           return $worker;
         }
         else{
           # Not spawned.  Use first one we come accross if we need to spawn
           $unspawned//=$index;
-          DEBUG and say "GETTING WORKER: found unspawned $index";
+          DEBUG and say STDERR "GETTING WORKER: found unspawned $index";
         }
       }
     }
@@ -205,7 +205,7 @@ sub _get_worker{
     my $template_worker=spawn_template(); #ensure template exists
   
     if($busy_count < (@pairs-1)){
-      DEBUG and say "Queue spawn command to template for inext $unspawned"; 
+      DEBUG and say STDERR "Queue spawn command to template for inext $unspawned"; 
       push $template_worker->[WORKER_QUEUE]->@*, [CMD_SPAWN, $i++, $unspawned];
       $index=$unspawned;
       $in_flight++;
@@ -231,7 +231,7 @@ sub pool_next{
   _results_available unless $Shared;
 
   for($w?$w:@pairs){
-    DEBUG and say "POOL next for ".$_->[WORKER_ID]." busy: $_->[WORKER_BUSY], queue; ".$_->[WORKER_QUEUE]->@*;
+    DEBUG and say STDERR "POOL next for ".$_->[WORKER_ID]." busy: $_->[WORKER_BUSY], queue; ".$_->[WORKER_QUEUE]->@*;
     my $ofd;
     # only process worker is initialized  not busy and  have something to process
     next unless $_->[WORKER_ID];
@@ -255,7 +255,7 @@ sub pool_next{
         # Write to template process
         #DEBUG and 
         my $windex=$req->[2];
-        DEBUG and say ">> SENDING CMD_SPWAN TO WORKER: $req->[REQ_WORKER], worker index $windex";
+        DEBUG and say STDERR ">> SENDING CMD_SPWAN TO WORKER: $req->[REQ_WORKER], worker index $windex";
         my $cread=fileno $pairs[$windex][WORKER_CREAD];
         my $cwrite=fileno $pairs[$windex][WORKER_CWRITE];
 
@@ -264,7 +264,7 @@ sub pool_next{
     }
     elsif($req->[REQ_CMD]==CMD_GAI) {
       # getaddrinfo request
-      DEBUG and say ">> SENDING CMD_GAI TO WORKER: $req->[REQ_WORKER]";
+      DEBUG and say STDERR ">> SENDING CMD_GAI TO WORKER: $req->[REQ_WORKER]";
       if(ref $req->[REQ_DATA] eq "ARRAY"){
         $out.=pack $gai_pack, $req->[REQ_DATA]->@*;
       }
@@ -278,17 +278,17 @@ sub pool_next{
       $ofd=$_->[WORKER_WRITE];
     }
     elsif($req->[REQ_CMD]==CMD_GNI){
-      DEBUG and say ">> SENDING CMD_GNI TO WORKER: $req->[REQ_WORKER]";
+      DEBUG and say STDERR ">> SENDING CMD_GNI TO WORKER: $req->[REQ_WORKER]";
       $out.=pack "l>/A* l>", $req->[REQ_DATA]->@*;
       $ofd=$_->[WORKER_WRITE];
 
     }
     elsif($req->[REQ_CMD]== CMD_KILL){
-      DEBUG and say ">> Sending CMD_KILL to worker: $req->[REQ_WORKER]";
+      DEBUG and say STDERR ">> Sending CMD_KILL to worker: $req->[REQ_WORKER]";
       $ofd=$_->[WORKER_WRITE];
     }
     elsif($req->[REQ_CMD]== CMD_REAP){
-      DEBUG and say ">> Sending CMD_REAP to worker: $req->[REQ_WORKER]";
+      DEBUG and say STDERR ">> Sending CMD_REAP to worker: $req->[REQ_WORKER]";
       $out.=pack("l>/l>*", $req->[REQ_DATA]->@*);
       $ofd=$pairs[0][WORKER_WRITE];
     }
@@ -296,7 +296,7 @@ sub pool_next{
       die "UNkown command in pool_next";
     }
 
-    DEBUG and say ">> WRITING WITH FD $ofd";
+    DEBUG and say STDERR ">> WRITING WITH FD $ofd";
     syswrite $ofd, unpack("H*", $out)."\n"; # bypass buffering
 
   }
@@ -339,7 +339,7 @@ sub process_results{
     $worker->[WORKER_BUSY]=0;
 
     if($cmd==CMD_GAI){
-      DEBUG and say "<< GAI return from worker $entry->[REQ_WORKER]";
+      DEBUG and say STDERR "<< GAI return from worker $entry->[REQ_WORKER]";
       my @res=unpack $gai_pack, $bin;
       if($res[0] and $entry->[REQ_ERR]){
         $entry->[REQ_ERR]($res[0]);
@@ -372,7 +372,7 @@ sub process_results{
 
     }
     elsif($cmd==CMD_GNI){
-      DEBUG and say "<< GNI return from worker $entry->[REQ_WORKER]";
+      DEBUG and say STDERR "<< GNI return from worker $entry->[REQ_WORKER]";
       my ($error, $host, $port)=unpack "l> l>/A* l>/A*", $bin;
       if($error and $entry->[REQ_ERR]){
         $entry->[REQ_ERR]($error);
@@ -389,7 +389,7 @@ sub process_results{
       # 
       my $pid=unpack "l>", $bin;
       my $index=$entry->[2];  #
-      DEBUG and say "SPAWN RETURN: pid $pid  index $index";
+      DEBUG and say STDERR "SPAWN RETURN: pid $pid  index $index";
       #unshift @pool_free, $index;
       my $worker=$pairs[$index];
       $worker->[WORKER_ID]=$pid;
@@ -397,11 +397,11 @@ sub process_results{
       $worker->[WORKER_BUSY]=0;
       $fd_worker_map{fileno $worker->[WORKER_READ]}=$worker;
 
-      DEBUG and say "<< SPAWN RETURN FROM TEMPLATE $entry->[REQ_WORKER]: new worker $pid";
+      DEBUG and say STDERR "<< SPAWN RETURN FROM TEMPLATE $entry->[REQ_WORKER]: new worker $pid";
     }
     elsif($cmd == CMD_KILL){
       my $id=$entry->[REQ_WORKER];
-      DEBUG and say "<< KILL RETURN FROM WORKER: $id : $worker->[WORKER_ID]";
+      DEBUG and say STDERR "<< KILL RETURN FROM WORKER: $id : $worker->[WORKER_ID]";
       $worker->[WORKER_ID]=0;
       #@pool_free=grep $pairs[$_]->[WORKER_ID] != $id, @pool_free;
     }
@@ -409,7 +409,7 @@ sub process_results{
       # Grandchild process  checking  via template process
       my @pids=unpack "l>/l>*", $bin;
 
-      DEBUG and say "<< REAP RETURN FROM TEMPLATE $entry->[REQ_WORKER]";
+      DEBUG and say STDERR "<< REAP RETURN FROM TEMPLATE $entry->[REQ_WORKER]";
       for(@pids){
         next unless $_ >0;
 
@@ -442,7 +442,7 @@ sub process_results{
 
 sub _results_available {
   my $timeout=shift//0;
-  DEBUG and say "CHECKING IF ReSULTS AVAILABLE";
+  DEBUG and say STDERR "CHECKING IF ReSULTS AVAILABLE";
   # Check if any workers are ready to talk 
   my $bits="";
   for(@pairs){
@@ -490,7 +490,7 @@ sub getaddrinfo{
 
   pool_next;
   #return true if outstanding requests
-  DEBUG and say "IN FLIGHT: $in_flight";
+  DEBUG and say STDERR "IN FLIGHT: $in_flight";
   $in_flight;
 }
 
@@ -507,7 +507,7 @@ sub getnameinfo{
 
   }
     pool_next;
-    DEBUG and say "IN FLIGHT: $in_flight";
+    DEBUG and say STDERR "IN FLIGHT: $in_flight";
     $in_flight;
 }
 
