@@ -18,7 +18,7 @@ Built in driver for integrating L<Socket::More::Resolver> into the
 L<Mojo::IOLoop>.
 
 If the event loop module is already in memory, it should automatically be
-detected when useing L<Socket::More::Resolver>;
+detected when using L<Socket::More::Resolver>;
 
 =cut
 

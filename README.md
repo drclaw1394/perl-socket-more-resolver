@@ -16,9 +16,12 @@ use Socket::More::Resolver;
 getaddrinfo("www.google.com", 0, {},
   sub {
     # got results
+    for(@_){
+      # do stuff with results
+    }
   },
   sub {
-    # got an error
+    # got an error. Will be numeric error code, convert to stirng
     say gai_strerror $_[0];
   }
 
@@ -31,18 +34,16 @@ $cv->recv;
 # DESCRIPTION
 
 Easy to use asynchronous DNS resolution with automatic integration into
-supported event loops or polled manually.
-
-It is stand alone module for small footprint, and is a part of the super
-package [Socket::More](https://metacpan.org/pod/Socket%3A%3AMore).
+supported event loops or polled manually. It is stand alone module with small
+footprint.
 
 Key features:
 
 - Automatically integrates into supported event loops 
 
-    [AnyEvent](https://metacpan.org/pod/AnyEvent), [IO::Async](https://metacpan.org/pod/IO%3A%3AAsync), [Mojo::IOLoop](https://metacpan.org/pod/Mojo%3A%3AIOLoop) are currently supported where
-    detected. Driver for other loops can be easily added. Non blocking polling is
-    also supported.
+    [AnyEvent](https://metacpan.org/pod/AnyEvent), [IO::Async](https://metacpan.org/pod/IO%3A%3AAsync), [Mojo::IOLoop](https://metacpan.org/pod/Mojo%3A%3AIOLoop) are currently supported and
+    automatically detected. Driver for other loops can be easily added. Non
+    blocking polling is also supported.
 
 - Extendable Event Loop Support
 
@@ -50,36 +51,39 @@ Key features:
 
 - Utilises your systems `getaddrinfo` and `getnameinfo`
 
-    Gives the results you would expect from your system configuration
-
-- Pure Perl
-
-    Uses core Perl [Socket](https://metacpan.org/pod/Socket). If [Socket::More::Lookup](https://metacpan.org/pod/Socket%3A%3AMore%3A%3ALookup) is available it will be
-    used instead.
+    Gives the results you would expect from your system configuration.
 
 - Threadless Self Managed Worker Pool
 
     The non blocking and asynchronous behaviour is achieved with a fully contained
-    and self managing worker pool, no threaded Perl required) and optimised for low
+    and self managing worker pool, (no threaded Perl required) and optimised for low
     memory usage and DNS queries.
 
-# Limitations and Features to be explored
+# MOTIVATION
+
+I wanted a simple way of doing asynchronous name/address lookups that works
+with local mDNS and local system configuration.
+
+# LIMITATIONS AND FEATURES TO BE EXPLORED
 
 - Future/Promise API
 
-    Make a version of getaddrinfo to return Futures/Promises instead of using
+    Make a version of getaddrinfo/getnameinfo to return Futures/Promises instead of using
     callbacks, because people like those.
 
 - Internal mDNS Resolver
 
     The worker pool works very well for fast DNS lookups, however mDNS lookups take
-    up to 5 seconds (by design), when a name is unkown. This can easily saturate
-    the worker pool if you ask multiple 'wrong names' quickly
+    up to 5 seconds (by design), when a name is unknown. This can easily saturate
+    the worker pool if you ask multiple 'wrong names' quickly. Due to the local
+    nature of the mDNS, a standalone event based resolver could solve this.. for
+    the future
 
 # USAGE 
 
-The resolver is designed to work with or without an event loop with as little
-fuss as possible. Import your event loop first, if using one, then this module:
+The resolver is designed to work **with** or **without** an event loop with as
+little fuss as possible. Import your event loop first, if using one, then this
+module:
 
 ```perl
 #use AnyEvnet; #use IO::Async; #use Mojo::IOLoop
@@ -90,6 +94,9 @@ use Socket::More::Resolver;
 This will perform automatic loop integration, pool management with default
 options and export all symbols and automatically start the worker pool, if it
 hasn't already been started. 
+
+There are a few examples for supported event loops in the 'examples' directory
+of this distribution.
 
 ## Import Options
 
@@ -161,7 +168,7 @@ specified as hash ref at import:
 
 ## API
 
-The API is focused on asyncrhonous usage. That means callbacks are used for
+The API is focused on asynchronous usage. That means callbacks are used for
 reporting results and errors.
 
 ### getaddrinfo
@@ -191,11 +198,13 @@ eg
 Please refer to [Socket](https://metacpan.org/pod/Socket) or [Socke::More::Lookup](https://metacpan.org/pod/Socke%3A%3AMore%3A%3ALookup) for details on how these
 values are used.
 
-`on_results` is callback which is called with the results from the query if no error occured.
+`on_results` is callback which is called with the results (list of hash refs)
+from the query if no error occurred.
+
 `on_error` is callback which is called with an error code.
 
-The return value represents the number of oustanding  requests/messages to be
-preocessed. This will always be a > 0 when resolving a host.
+The return value represents the number of outstanding  requests/messages to be
+processed. This will always be a > 0 when resolving a host.
 
 However, if called with no arguments, services the request queue and checks for
 availability of results.  When not using an event loop this acts as the polling
@@ -211,6 +220,20 @@ eq
 ```
 
 ### getnameinfo 
+
+```
+getnameinfo(addr, flags, on_result, on_error)
+```
+
+`addr` is the addr field from from a socket or a previous getaddrinfo call
+`hints` is hash of hints to adjust processing and restrict results
+Please refer to [Socket](https://metacpan.org/pod/Socket) or [Socke::More::Lookup](https://metacpan.org/pod/Socke%3A%3AMore%3A%3ALookup) for details on how these
+values are used.
+
+`on_results` is a callback which is called with the result from the query (DNS
+name) if no error occurred.
+
+`on_error` is callback which is called with an error code.
 
 # Supporting other event loops
 
@@ -229,9 +252,7 @@ as a templates process and is spawned (forked and exec) into the
 Lookup requests are sent to remaining workers which are active to process the
 blocking request to `getaddrinfo` or `getnameinfo`.
 
-Process reaping and respawning etc is automatic,
-
-TODO: Document more
+Process reaping and re-spawning etc is automatic,
 
 # COMPARISION TO OTHER MODULES
 
@@ -240,7 +261,8 @@ TODO: Document more
 ```
 Uses Internal C level threads
 Returns file handles for each resolution request
-Awkward interface for integration into event loop
+Awkward interface for integration into event loops due to the multiple file
+handles
 ```
 
 [IO::Async](https://metacpan.org/pod/IO%3A%3AAsync)
@@ -263,3 +285,25 @@ Implements it's own resolver
 Doesn't use system confuration
 Doesn't work with .local multicast DNS
 ```
+
+# AUTHOR
+
+Ruben Westerberg, <drclaw@mac.com>
+
+# REPOSITORTY and BUGS
+
+Please report any bugs via git hub:
+[https://github.com/drclaw1394/perl-socket-more-resolver](https://github.com/drclaw1394/perl-socket-more-resolver)
+
+# COPYRIGHT AND LICENSE
+
+Copyright (C) 2023 by Ruben Westerberg
+
+This library is free software; you can redistribute it and/or modify it under
+the same terms as Perl or the MIT license.
+
+# DISCLAIMER OF WARRANTIES
+
+THIS PACKAGE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE.

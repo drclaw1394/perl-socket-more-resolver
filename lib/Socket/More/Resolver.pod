@@ -15,9 +15,12 @@ Automatic Event Loop Integration and support
   getaddrinfo("www.google.com", 0, {},
     sub {
       # got results
+      for(@_){
+        # do stuff with results
+      }
     },
     sub {
-      # got an error
+      # got an error. Will be numeric error code, convert to stirng
       say gai_strerror $_[0];
     }
 
@@ -26,14 +29,12 @@ Automatic Event Loop Integration and support
   my $cv=AE::cv;
   $cv->recv;
 
+
 =head1 DESCRIPTION
 
-
 Easy to use asynchronous DNS resolution with automatic integration into
-supported event loops or polled manually.
-
-It is stand alone module for small footprint, and is a part of the super
-package L<Socket::More>.
+supported event loops or polled manually. It is stand alone module with small
+footprint.
 
 Key features:
 
@@ -41,9 +42,9 @@ Key features:
 
 =item Automatically integrates into supported event loops 
 
-L<AnyEvent>, L<IO::Async>, L<Mojo::IOLoop> are currently supported where
-detected. Driver for other loops can be easily added. Non blocking polling is
-also supported.
+L<AnyEvent>, L<IO::Async>, L<Mojo::IOLoop> are currently supported and
+automatically detected. Driver for other loops can be easily added. Non
+blocking polling is also supported.
 
 =item Extendable Event Loop Support
 
@@ -51,42 +52,45 @@ The user can write a 'driver' for other event loops (and put them on CPAN!)
 
 =item Utilises your systems C<getaddrinfo> and C<getnameinfo>
 
-Gives the results you would expect from your system configuration
-
-=item Pure Perl
-
-Uses core Perl L<Socket>. If L<Socket::More::Lookup> is available it will be
-used instead.
+Gives the results you would expect from your system configuration.
 
 =item Threadless Self Managed Worker Pool
 
 The non blocking and asynchronous behaviour is achieved with a fully contained
-and self managing worker pool, no threaded Perl required) and optimised for low
+and self managing worker pool, (no threaded Perl required) and optimised for low
 memory usage and DNS queries.
 
 =back
 
-=head1 Limitations and Features to be explored
+=head1 MOTIVATION
+
+I wanted a simple way of doing asynchronous name/address lookups that works
+with local mDNS and local system configuration.
+
+=head1 LIMITATIONS AND FEATURES TO BE EXPLORED
 
 =over
 
 =item Future/Promise API
 
-Make a version of getaddrinfo to return Futures/Promises instead of using
+Make a version of getaddrinfo/getnameinfo to return Futures/Promises instead of using
 callbacks, because people like those.
 
 =item Internal mDNS Resolver
 
 The worker pool works very well for fast DNS lookups, however mDNS lookups take
-up to 5 seconds (by design), when a name is unkown. This can easily saturate
-the worker pool if you ask multiple 'wrong names' quickly
+up to 5 seconds (by design), when a name is unknown. This can easily saturate
+the worker pool if you ask multiple 'wrong names' quickly. Due to the local
+nature of the mDNS, a standalone event based resolver could solve this.. for
+the future
 
 =back
 
 =head1 USAGE 
 
-The resolver is designed to work with or without an event loop with as little
-fuss as possible. Import your event loop first, if using one, then this module:
+The resolver is designed to work B<with> or B<without> an event loop with as
+little fuss as possible. Import your event loop first, if using one, then this
+module:
 
   #use AnyEvnet; #use IO::Async; #use Mojo::IOLoop
   use Socket::More::Resolver; 
@@ -95,6 +99,9 @@ fuss as possible. Import your event loop first, if using one, then this module:
 This will perform automatic loop integration, pool management with default
 options and export all symbols and automatically start the worker pool, if it
 hasn't already been started. 
+
+There are a few examples for supported event loops in the 'examples' directory
+of this distribution.
 
 =head2 Import Options
 
@@ -160,7 +167,7 @@ See the below on writing a driver.
 
 =head2 API
 
-The API is focused on asyncrhonous usage. That means callbacks are used for
+The API is focused on asynchronous usage. That means callbacks are used for
 reporting results and errors.
 
 =head3 getaddrinfo
@@ -188,12 +195,14 @@ C<hints> is hash of hints to adjust processing and restrict results
 Please refer to L<Socket> or L<Socke::More::Lookup> for details on how these
 values are used.
 
-C<on_results> is callback which is called with the results from the query if no error occured.
+C<on_results> is callback which is called with the results (list of hash refs)
+from the query if no error occurred.
+
 C<on_error> is callback which is called with an error code.
 
 
-The return value represents the number of oustanding  requests/messages to be
-preocessed. This will always be a > 0 when resolving a host.
+The return value represents the number of outstanding  requests/messages to be
+processed. This will always be a > 0 when resolving a host.
 
 However, if called with no arguments, services the request queue and checks for
 availability of results.  When not using an event loop this acts as the polling
@@ -210,6 +219,17 @@ mechanism:
 =head3 getnameinfo 
 
 
+  getnameinfo(addr, flags, on_result, on_error)
+
+C<addr> is the addr field from from a socket or a previous getaddrinfo call
+C<hints> is hash of hints to adjust processing and restrict results
+Please refer to L<Socket> or L<Socke::More::Lookup> for details on how these
+values are used.
+
+C<on_results> is a callback which is called with the result from the query (DNS
+name) if no error occurred.
+
+C<on_error> is callback which is called with an error code.
 
 
 =head1 Supporting other event loops
@@ -229,10 +249,7 @@ L<Socket::More::Resolver::Worker>.
 Lookup requests are sent to remaining workers which are active to process the
 blocking request to C<getaddrinfo> or C<getnameinfo>.
 
-Process reaping and respawning etc is automatic,
-
-TODO: Document more
-
+Process reaping and re-spawning etc is automatic,
 
 
 =head1 COMPARISION TO OTHER MODULES
@@ -241,7 +258,8 @@ L<Net::DNS::Native>
 
   Uses Internal C level threads
   Returns file handles for each resolution request
-  Awkward interface for integration into event loop
+  Awkward interface for integration into event loops due to the multiple file
+  handles
 
 L<IO::Async>
 
@@ -258,4 +276,26 @@ L<AnyEvent>
   Doesn't use system confuration
   Doesn't work with .local multicast DNS
 
+=head1 AUTHOR
 
+Ruben Westerberg, E<lt>drclaw@mac.comE<gt>
+
+=head1 REPOSITORTY and BUGS
+
+Please report any bugs via git hub:
+L<https://github.com/drclaw1394/perl-socket-more-resolver>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2023 by Ruben Westerberg
+
+This library is free software; you can redistribute it and/or modify it under
+the same terms as Perl or the MIT license.
+
+=head1 DISCLAIMER OF WARRANTIES
+
+THIS PACKAGE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE.
+
+=cut

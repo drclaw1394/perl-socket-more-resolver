@@ -15,6 +15,7 @@ use constant::more qw<REQ_CMD=0   REQ_ID  REQ_DATA  REQ_CB  REQ_ERR REQ_WORKER>;
 use Fcntl;
 
 use Export::These qw<getaddrinfo getnameinfo close_pool>;
+use Socket::More::Lookup ();
 
 my $gai_data_pack="l> l> l> l> l>/a* l>/a*";
 
@@ -138,6 +139,10 @@ sub _preexport {
   @_;
 }
 
+sub _reexport {
+  Socket::More::Lookup->import("gai_strerror"); 
+}
+
 
 
 
@@ -223,13 +228,14 @@ sub _get_worker{
 }
 
 
+sub pool_next;
 # Serialize messages to worker from queue
 sub pool_next{
   my $w=shift;
 
   # handle returns first .. TODO: This is only if no event system is being used
   _results_available unless $Shared;
-
+  my $redo;
   for($w?$w:@pairs){
     DEBUG and say STDERR "POOL next for ".$_->[WORKER_ID]." busy: $_->[WORKER_BUSY], queue; ".$_->[WORKER_QUEUE]->@*;
     my $ofd;
@@ -261,6 +267,7 @@ sub pool_next{
 
         $out.=pack("l> l>", $cread, $cwrite);
         $ofd=$pairs[0][WORKER_WRITE];
+        $redo=1;
     }
     elsif($req->[REQ_CMD]==CMD_GAI) {
       # getaddrinfo request
@@ -286,11 +293,13 @@ sub pool_next{
     elsif($req->[REQ_CMD]== CMD_KILL){
       DEBUG and say STDERR ">> Sending CMD_KILL to worker: $req->[REQ_WORKER]";
       $ofd=$_->[WORKER_WRITE];
+      $redo=1;
     }
     elsif($req->[REQ_CMD]== CMD_REAP){
       DEBUG and say STDERR ">> Sending CMD_REAP to worker: $req->[REQ_WORKER]";
       $out.=pack("l>/l>*", $req->[REQ_DATA]->@*);
       $ofd=$pairs[0][WORKER_WRITE];
+      $redo=1;
     }
     else {
       die "UNkown command in pool_next";
@@ -300,6 +309,7 @@ sub pool_next{
     syswrite $ofd, unpack("H*", $out)."\n"; # bypass buffering
 
   }
+   pool_next if $redo;
 }
 
 
@@ -346,22 +356,24 @@ sub process_results{
       }
       elsif(!$res[0] and $entry->[REQ_CB]){
         my @list;
-        #for my( $error, $family, $type, $protocol, $addr, $canonname)(@res){
-        if(ref($entry->[REQ_DATA]) eq "ARRAY"){
-          push @list, [@res];#[$error, $family, $type, $protocol, $addr, $canonname]; 
-        }
-        else {
-          #push @list, {family=>$family, socktype=>$type, protocol=>$protocol, addr=>$addr, canonname=>$canonname};
-          push @list, {
-            error=>$res[0],
-            family=>$res[1],
-            socktype=>$res[2],
-            protocol=>$res[3],
-            addr=>$res[4],
-            cannonname=>$res[5]
-          };
+        while(@res>=6){
+          my @r=splice @res,0, 6;
+          $r[5]||=undef; #Set cannon name to undef if empty string
+          if(ref($entry->[REQ_DATA]) eq "ARRAY"){
+            push @list, \@r;#[$error, $family, $type, $protocol, $addr, $canonname]; 
+          }
+          else {
+            push @list, {
+              error=>$r[0],
+              family=>$r[1],
+              socktype=>$r[2],
+              protocol=>$r[3],
+              addr=>$r[4],
+              cannonname=>$r[5]
+            };
 
-        }
+          }
+      }
           #}
         $entry->[REQ_CB](@list);
       }
