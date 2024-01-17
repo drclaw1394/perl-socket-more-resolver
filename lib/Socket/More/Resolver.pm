@@ -5,7 +5,7 @@ use warnings;
 use feature qw<say state>;
 
 no warnings "experimental";
-our $VERSION="v0.1.0";
+our $VERSION="v0.1.1";
 
 use constant::more DEBUG=>0;
 use constant::more qw<CMD_GAI=0   CMD_GNI   CMD_SPAWN   CMD_KILL CMD_REAP>;
