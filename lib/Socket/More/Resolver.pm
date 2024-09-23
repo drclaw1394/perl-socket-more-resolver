@@ -5,7 +5,7 @@ use warnings;
 use feature qw<say state>;
 
 no warnings "experimental";
-our $VERSION="v0.1.1";
+our $VERSION="v0.1.2";
 
 use constant::more DEBUG=>0;
 use constant::more qw<CMD_GAI=0   CMD_GNI   CMD_SPAWN   CMD_KILL CMD_REAP>;
@@ -278,7 +278,8 @@ sub pool_next{
       else {
         # assume a hash
         for($req->[REQ_DATA]){
-          $out.=pack $gai_pack, $_->{flags}//0, $_->{family}//0, $_->{socktype}//0, $_->{protocol}//0, $_->{host}, $_->{port};
+          #$out.=pack $gai_pack, $_->{flags}//0, $_->{family}//0, $_->{socktype}//0, $_->{protocol}//0, $_->{host}, $_->{port};
+          $out.=pack $gai_pack, $_->{flags}//0, $_->{family}//0, $_->{socktype}//0, $_->{protocol}//0, $_->{address}, $_->{port};
         }
       }
 
@@ -454,7 +455,7 @@ sub process_results{
 
 sub _results_available {
   my $timeout=shift//0;
-  DEBUG and say STDERR "CHECKING IF ReSULTS AVAILABLE";
+  DEBUG and say STDERR "CHECKING IF RESULTS AVAILABLE";
   # Check if any workers are ready to talk 
   my $bits="";
   for(@pairs){
@@ -485,7 +486,8 @@ sub getaddrinfo{
       push @$hints, $host, $port;
     }
     else {
-      $hints->{host}=$host;
+      #$hints->{host}=$host;
+      $hints->{address}=$host;
       $hints->{port}=$port;
     }
 
