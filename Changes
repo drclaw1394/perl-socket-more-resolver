@@ -4,7 +4,7 @@ v0.1.3  2024-10-28
     - fixed return code in getnameinfo call
 
   [tests]
-    - added  test for localhost 
+    - added test for localhost 
     
 
 v0.1.2  2024-07-02
