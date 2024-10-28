@@ -5,7 +5,7 @@ use warnings;
 use feature qw<say state>;
 
 no warnings "experimental";
-our $VERSION="v0.1.2";
+our $VERSION="v0.1.3";
 
 use constant::more DEBUG=>0;
 use constant::more qw<CMD_GAI=0   CMD_GNI   CMD_SPAWN   CMD_KILL CMD_REAP>;
@@ -384,13 +384,18 @@ sub process_results{
 
 
     }
+
     elsif($cmd==CMD_GNI){
       DEBUG and say STDERR "<< GNI return from worker $entry->[REQ_WORKER]";
       my ($error, $host, $port)=unpack "l> l>/A* l>/A*", $bin;
+        DEBUG and say STDERR "error $error";
+        DEBUG and say STDERR "host $host";
+        DEBUG and say STDERR "service Service $port";
       if($error and $entry->[REQ_ERR]){
         $entry->[REQ_ERR]($error);
       }
       elsif(!$error and $entry->[REQ_CB]){
+          DEBUG and say $entry->[REQ_CB];
           $entry->[REQ_CB]($host, $port);
       }
       else {
